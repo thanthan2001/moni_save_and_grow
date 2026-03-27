@@ -64,10 +64,16 @@ class _AddEditTransactionPageState extends State<AddEditTransactionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        context.pop();
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/dashboard');
+          }
+        }
       },
       child: Scaffold(
         appBar: AppBar(
@@ -91,8 +97,12 @@ class _AddEditTransactionPageState extends State<AddEditTransactionPage> {
               // Nếu đang edit, quay lại trang trước
               context.pop(true);
             } else {
-              // Nếu thêm mới, chuyển sang danh sách giao dịch (replace current route)
-              context.go('/transactions');
+              // Nếu thêm mới, pop về màn hình trước (không replace stack)
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/dashboard');
+              }
             }
           } else if (state is TransactionError) {
             AppSnackBar.showError(context, state.message);

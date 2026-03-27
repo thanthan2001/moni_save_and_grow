@@ -56,11 +56,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Ngăn chặn swipe back thoát app từ trang chính
-        return false;
-      },
+    return PopScope(
+      canPop: false, // Ngăn chặn swipe back thoát app từ trang chính (root screen)
       child: Scaffold(
         appBar: AppBar(
           title: AppText.heading4('MONI'),
