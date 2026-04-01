@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/routing/app_back_scope.dart';
 import '../../../../global/widgets/widgets.dart';
 
 /// Màn hình Thêm tính năng - hiển thị các features của app
@@ -8,18 +9,20 @@ class FeaturesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
+    return AppBackScope(
+      child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFF5F7FA),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => AppBackScope.handleBack(context),
+          ),
+          title: AppText.heading4('Chức năng'),
         ),
-        title: AppText.heading4('Chức năng'),
+        body: _buildFeaturesGrid(context),
       ),
-      body: _buildFeaturesGrid(context),
     );
   }
 

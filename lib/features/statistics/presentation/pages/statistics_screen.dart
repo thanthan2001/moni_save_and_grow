@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/routing/app_back_scope.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/configs/app_colors.dart';
 import '../../../../global/widgets/widgets.dart';
@@ -40,18 +41,14 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        context.pop();
-        return false;
-      },
+    return AppBackScope(
       child: Scaffold(
         appBar: AppBar(
           title: AppText.heading4('Thống kê'),
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.pop(),
+            onPressed: () => AppBackScope.handleBack(context),
           ),
           actions: [
             // Filter button

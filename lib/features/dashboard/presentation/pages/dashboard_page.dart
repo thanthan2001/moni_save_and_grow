@@ -56,26 +56,24 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false, // Ngăn chặn swipe back thoát app từ trang chính (root screen)
-      child: Scaffold(
-        appBar: AppBar(
-          title: AppText.heading4('MONI'),
-          elevation: 0,
-          actions: [
-            //Add transaction
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              tooltip: 'Thêm giao dịch',
-              onPressed: () async {
-                await context.push('/transactions/add');
-                if (mounted) {
-                  context.read<DashboardBloc>().add(const RefreshDashboard());
-                }
-              },
-            ),
-          ],
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: AppText.heading4('MONI'),
+        elevation: 0,
+        actions: [
+          //Add transaction
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            tooltip: 'Thêm giao dịch',
+            onPressed: () async {
+              await context.push('/transactions/add');
+              if (mounted) {
+                context.read<DashboardBloc>().add(const RefreshDashboard());
+              }
+            },
+          ),
+        ],
+      ),
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
           if (state is DashboardLoading) {
@@ -133,7 +131,6 @@ class _DashboardPageState extends State<DashboardPage> {
           context.go(route);
         },
       ),
-    ),
     );
   }
 

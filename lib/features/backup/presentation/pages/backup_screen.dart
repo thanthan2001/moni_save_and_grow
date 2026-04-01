@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/routing/app_back_scope.dart';
 import '../../../../core/error/failures.dart';
 import '../../../../global/widgets/widgets.dart';
 import '../../domain/entities/backup_import_result.dart';
@@ -40,11 +40,7 @@ class _BackupScreenState extends State<BackupScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        context.pop();
-        return false;
-      },
+    return AppBackScope(
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Sao lưu & Khôi phục'),

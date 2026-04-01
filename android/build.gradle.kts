@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.compile.JavaCompile
+
 allprojects {
     repositories {
         google()
@@ -11,7 +13,12 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("-Xlint:-options")
+    }
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/routing/app_back_scope.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
 import '../../../../global/widgets/widgets.dart';
 import '../../domain/entities/spending_limit_entity.dart';
@@ -63,11 +64,7 @@ class _SpendingLimitSettingsViewState
   
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.of(context).pop();
-        return false;
-      },
+    return AppBackScope(
       child: Scaffold(
       appBar: AppBar(
         title: AppText.heading4('Giới Hạn Chi Tiêu'),

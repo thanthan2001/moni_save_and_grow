@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/routing/app_back_scope.dart';
 import '../../../../core/configs/app_colors.dart';
 import '../../../../global/widgets/widgets.dart';
 import '../bloc/settings_bloc.dart';
@@ -14,16 +15,12 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        context.pop();
-        return false;
-      },
+    return AppBackScope(
       child: Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.pop(),
+            onPressed: () => AppBackScope.handleBack(context),
           ),
           title: AppText.heading4('Cài đặt'),
           centerTitle: true,

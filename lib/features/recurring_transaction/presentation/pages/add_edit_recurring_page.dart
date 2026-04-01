@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/routing/app_back_scope.dart';
 import '../../../../core/utils/currency_input_formatter.dart';
 import '../../../../global/widgets/widgets.dart';
 import '../../../dashboard/data/datasources/dashboard_local_data_source.dart';
@@ -115,11 +116,7 @@ class _AddEditRecurringPageState extends State<AddEditRecurringPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        context.pop();
-        return false;
-      },
+    return AppBackScope(
       child: Scaffold(
       appBar: AppBar(
         title: AppText.heading4(

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/configs/app_colors.dart';
+import '../../../../core/routing/app_back_scope.dart';
 import '../../../../global/widgets/widgets.dart';
 import '../../../category/domain/entities/category_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
@@ -39,11 +40,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        context.pop();
-        return false;
-      },
+    return AppBackScope(
       child: Scaffold(
         appBar: AppBar(
           title: AppText.heading4('Giao dịch'),
@@ -51,7 +48,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              context.pop();
+              AppBackScope.handleBack(context);
             },
           ),
         ),
