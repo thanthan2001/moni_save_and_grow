@@ -15,4 +15,5 @@ class AppEnv {
   static String get appEnv => dotenv.env['APP_ENV'] ?? 'development';
   static int get timeout =>
       int.tryParse(dotenv.env['TIMEOUT'] ?? '3000') ?? 3000;
+  static String get geminiApiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
 }

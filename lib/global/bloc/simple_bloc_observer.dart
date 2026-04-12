@@ -4,7 +4,14 @@ import 'package:logger/logger.dart';
 // Lớp này giúp theo dõi (log) tất cả các thay đổi của BLoC trong ứng dụng.
 // Rất hữu ích cho việc debug.
 class SimpleBlocObserver extends BlocObserver {
-  final Logger logger = Logger();
+  final Logger logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 0,
+      errorMethodCount: 8,
+      lineLength: 100,
+      printEmojis: false,
+    ),
+  );
 
   @override
   void onEvent(Bloc bloc, Object? event) {
@@ -20,14 +27,11 @@ class SimpleBlocObserver extends BlocObserver {
   }
 
   @override
-  void onChange(BlocBase bloc, Change change) {
-    super.onChange(bloc, change);
-    logger.d('onChange -- ${bloc.runtimeType}, $change');
-  }
-
-  @override
   void onTransition(Bloc bloc, Transition transition) {
     super.onTransition(bloc, transition);
-    logger.d('onTransition -- ${bloc.runtimeType}, $transition');
+    logger.d(
+      'onTransition -- ${bloc.runtimeType}, '
+      '${transition.currentState.runtimeType} -> ${transition.nextState.runtimeType}',
+    );
   }
 }

@@ -10,6 +10,7 @@ import 'package:my_clean_app/features/statistics/presentation/bloc/statistics_bl
 import 'package:my_clean_app/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:my_clean_app/features/budget/presentation/bloc/budget_bloc.dart';
 import 'package:my_clean_app/features/recurring_transaction/presentation/bloc/recurring_transaction_bloc.dart';
+import 'package:my_clean_app/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 import 'package:my_clean_app/core/di/injection_container.dart' as di;
 
 class AppConfig extends StatelessWidget {
@@ -42,6 +43,9 @@ class AppConfig extends StatelessWidget {
         ),
         BlocProvider<RecurringTransactionBloc>(
           create: (_) => di.sl<RecurringTransactionBloc>(),
+        ),
+        BlocProvider<AiAssistantBloc>(
+          create: (_) => di.sl<AiAssistantBloc>(),
         ),
       ],
       child: MaterialApp.router(

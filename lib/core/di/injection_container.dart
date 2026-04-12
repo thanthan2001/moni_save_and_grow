@@ -75,6 +75,12 @@ import 'package:my_clean_app/features/backup/domain/usecases/export_data_usecase
 import 'package:my_clean_app/features/backup/domain/usecases/import_data_usecase.dart';
 import 'package:my_clean_app/features/backup/domain/usecases/restore_data_usecase.dart';
 import 'package:my_clean_app/features/backup/domain/usecases/validate_backup_file_usecase.dart';
+import 'package:my_clean_app/features/ai_assistant/data/repositories/ai_transaction_parser_repository_impl.dart';
+import 'package:my_clean_app/features/ai_assistant/data/datasources/gemini_transaction_parser_data_source.dart';
+import 'package:my_clean_app/features/ai_assistant/data/services/financial_message_parser_service.dart';
+import 'package:my_clean_app/features/ai_assistant/domain/repositories/ai_transaction_parser_repository.dart';
+import 'package:my_clean_app/features/ai_assistant/domain/usecases/parse_financial_message_usecase.dart';
+import 'package:my_clean_app/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../configs/app_env.dart';
 // import '../error/failures.dart';
@@ -324,8 +330,7 @@ Future<void> init() async {
     () => BackupRepositoryImpl(),
   );
   sl.registerLazySingleton(() => ExportDataUseCase(sl()));
-  sl.registerLazySingleton(
-      () => ValidateBackupFileUseCase(repository: sl()));
+  sl.registerLazySingleton(() => ValidateBackupFileUseCase(repository: sl()));
   sl.registerLazySingleton(() => RestoreDataUseCase(sl()));
   sl.registerLazySingleton(
     () => ImportDataUseCase(
@@ -342,10 +347,30 @@ Future<void> init() async {
   );
   sl.registerLazySingleton(
     () => GoogleSignIn(
-      clientId: '157701303044-ikf42ne700jmff720po9a9bfgogdl8gr.apps.googleusercontent.com',
+      clientId:
+          '157701303044-ikf42ne700jmff720po9a9bfgogdl8gr.apps.googleusercontent.com',
       scopes: ['https://www.googleapis.com/auth/drive.file'],
     ),
   );
+
+  // ## Features - AI Assistant
+  sl.registerFactory(() => AiAssistantBloc(
+        parseFinancialMessageUseCase: sl(),
+        getAllCategoriesUseCase: sl(),
+        addTransactionUseCase: sl(),
+      ));
+
+  sl.registerLazySingleton(() => ParseFinancialMessageUseCase(sl()));
+
+  sl.registerLazySingleton<AiTransactionParserRepository>(
+    () => AiTransactionParserRepositoryImpl(
+      geminiDataSource: sl(),
+      parserService: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(() => GeminiTransactionParserDataSource());
+  sl.registerLazySingleton(() => FinancialMessageParserService());
 
   // ## Features - Auth
   // Bloc

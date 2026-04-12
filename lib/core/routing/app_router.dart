@@ -16,6 +16,7 @@ import '../../features/budget/presentation/pages/budget_management_page.dart';
 import '../../features/spending_limit/presentation/pages/spending_limit_settings_page.dart';
 import '../../features/recurring_transaction/presentation/pages/recurring_transaction_list_page.dart';
 import '../../features/backup/presentation/pages/backup_screen.dart';
+import '../../features/ai_assistant/presentation/pages/ai_assistant_page.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -94,6 +95,10 @@ class AppRouter {
       GoRoute(
         path: '/backup',
         builder: (context, state) => const BackupScreen(),
+      ),
+      GoRoute(
+        path: '/ai-assistant',
+        builder: (context, state) => const AiAssistantPage(),
       ),
     ],
   );

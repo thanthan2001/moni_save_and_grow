@@ -63,6 +63,13 @@ class FeaturesPage extends StatelessWidget {
             iconColor: const Color(0xFF4CAF50), // Green
             onTap: () => context.push('/backup'),
           ),
+          _buildFeatureCard(
+            icon: Icons.smart_toy_outlined,
+            title: 'Trợ lí AI',
+            description: 'Phân tích tin nhắn thành giao dịch tự động',
+            iconColor: const Color(0xFF00695C), // Teal
+            onTap: () => context.push('/ai-assistant'),
+          ),
           // _buildFeatureCard(
           //   icon: Icons.bar_chart_outlined,
           //   title: 'Thống kê',
