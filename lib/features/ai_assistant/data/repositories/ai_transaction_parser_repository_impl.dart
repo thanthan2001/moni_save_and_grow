@@ -253,11 +253,14 @@ class AiTransactionParserRepositoryImpl
 
     final parsedHasInvalidRelativeDates = _hasRelativeDateKeywords(message) &&
         _hasSuspiciousRelativeDates(parsed);
+    final parsedLostExplicitDates = _hasExplicitDateKeywords(message) &&
+        _hasMissingExplicitDates(parsed, fallback);
 
     if ((parsedTooFew ||
             parsedHasMergedDescription ||
             parsedHasGenericDescription ||
             parsedHasInvalidRelativeDates ||
+            parsedLostExplicitDates ||
             parsedHasSuspiciousAmount) &&
         fallbackLooksBetter) {
       return true;
@@ -278,7 +281,8 @@ class AiTransactionParserRepositoryImpl
     List<AiTransactionParseEntity> parsed,
     List<AiTransactionParseEntity> fallback,
   ) {
-    if (!_hasRelativeDateKeywords(message)) {
+    if (!_hasRelativeDateKeywords(message) &&
+        !_hasExplicitDateKeywords(message)) {
       return parsed;
     }
 
@@ -310,6 +314,33 @@ class AiTransactionParserRepositoryImpl
         text.contains('hom kia') ||
         text.contains('ngày mai') ||
         text.contains('ngay mai');
+  }
+
+  bool _hasExplicitDateKeywords(String message) {
+    final text = message.toLowerCase();
+    return RegExp(r'\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b').hasMatch(text) ||
+        RegExp(r'\b\d{4}-\d{1,2}-\d{1,2}\b').hasMatch(text) ||
+        RegExp(
+          r'\b(?:ngay|ngày)?\s*\d{1,2}\s*(?:thang|tháng)\s*\d{1,2}(?:\s*(?:nam|năm)\s*\d{2,4})?\b',
+          caseSensitive: false,
+        ).hasMatch(text);
+  }
+
+  bool _hasMissingExplicitDates(
+    List<AiTransactionParseEntity> parsed,
+    List<AiTransactionParseEntity> fallback,
+  ) {
+    final length =
+        parsed.length < fallback.length ? parsed.length : fallback.length;
+    for (var i = 0; i < length; i++) {
+      final parsedDate = parsed[i].datetime.trim().toLowerCase();
+      final fallbackDate = fallback[i].datetime.trim().toLowerCase();
+      if (parsedDate == 'now' && fallbackDate != 'now') {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   bool _hasSuspiciousRelativeDates(List<AiTransactionParseEntity> parsed) {

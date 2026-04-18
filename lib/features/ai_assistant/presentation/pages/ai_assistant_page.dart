@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,11 +22,14 @@ class AiAssistantPage extends StatefulWidget {
   State<AiAssistantPage> createState() => _AiAssistantPageState();
 }
 
-class _AiAssistantPageState extends State<AiAssistantPage> {
+class _AiAssistantPageState extends State<AiAssistantPage>
+    with SingleTickerProviderStateMixin {
   final _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final SpeechToText _speechToText = SpeechToText();
   final ImagePicker _imagePicker = ImagePicker();
+  final List<_ChatBubbleData> _chatMessages = [];
+  AnimationController? _voiceWaveController;
 
   bool _speechEnabled = false;
   bool _isListening = false;
@@ -35,16 +38,51 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
   @override
   void initState() {
     super.initState();
+    _ensureVoiceWaveController();
     context.read<AiAssistantBloc>().add(const LoadAiAssistantContext());
     _initSpeech();
+    _chatMessages.add(
+      _ChatBubbleData(
+        text:
+            'Xin chào, mình có thể giúp bạn phân tích giao dịch từ đoạn chat tự nhiên, giọng nói hoặc ảnh hóa đơn.',
+        isUser: false,
+        icon: Icons.smart_toy_rounded,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _speechToText.stop();
+    _voiceWaveController?.dispose();
+    _voiceWaveController = null;
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  AnimationController _ensureVoiceWaveController() {
+    return _voiceWaveController ??= AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+  }
+
+  void _setListeningState(bool listening) {
+    if (_isListening == listening) return;
+    final controller = _ensureVoiceWaveController();
+
+    setState(() {
+      _isListening = listening;
+    });
+
+    if (listening) {
+      controller.repeat();
+    } else {
+      controller.stop();
+      controller.reset();
+    }
   }
 
   Future<void> _initSpeech() async {
@@ -53,16 +91,12 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
         onStatus: (status) {
           if (!mounted) return;
           if (status == 'done' || status == 'notListening') {
-            setState(() {
-              _isListening = false;
-            });
+            _setListeningState(false);
           }
         },
         onError: (_) {
           if (!mounted) return;
-          setState(() {
-            _isListening = false;
-          });
+          _setListeningState(false);
         },
       );
 
@@ -109,30 +143,44 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
     if (_isListening) {
       await _speechToText.stop();
       if (!mounted) return;
-      setState(() {
-        _isListening = false;
-      });
+      _setListeningState(false);
       return;
     }
 
-    final listening = await _speechToText.listen(
-      localeId: 'vi_VN',
-      listenMode: ListenMode.dictation,
-      onResult: (result) {
-        final text = result.recognizedWords.trim();
-        if (text.isEmpty || !mounted) return;
+    try {
+      final dynamic listenResult = await _speechToText.listen(
+        localeId: 'vi_VN',
+        listenMode: ListenMode.dictation,
+        onResult: (result) {
+          final text = result.recognizedWords.trim();
+          if (text.isEmpty || !mounted) return;
 
-        _messageController.text = text;
-        _messageController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _messageController.text.length),
-        );
-      },
-    );
+          _messageController.text = text;
+          _messageController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _messageController.text.length),
+          );
+        },
+      );
 
-    if (!mounted) return;
-    setState(() {
-      _isListening = listening;
-    });
+      if (!mounted) return;
+      final isListeningNow =
+          listenResult is bool ? listenResult : _speechToText.isListening;
+      _setListeningState(isListeningNow);
+    } on PlatformException {
+      if (!mounted) return;
+      _setListeningState(false);
+      AppSnackBar.showError(
+        context,
+        'Không thể bật Voice to Text. Vui lòng thử lại.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _setListeningState(false);
+      AppSnackBar.showError(
+        context,
+        'Voice gặp lỗi không xác định. Vui lòng thử lại.',
+      );
+    }
   }
 
   Future<void> _openOcrSourcePicker() async {
@@ -234,16 +282,50 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
     }
   }
 
+  void _appendMessage({
+    required String text,
+    required bool isUser,
+    IconData? icon,
+    Color? accent,
+  }) {
+    setState(() {
+      _chatMessages.add(
+        _ChatBubbleData(
+          text: text,
+          isUser: isUser,
+          icon: icon,
+          accent: accent,
+          createdAt: DateTime.now(),
+        ),
+      );
+    });
+    _scrollToBottom();
+  }
+
+  void _sendMessage(AiAssistantState state) {
+    if (state.isLoading) return;
+
+    final message = _messageController.text.trim();
+    if (message.isEmpty) {
+      AppSnackBar.showError(context, 'Vui lòng nhập nội dung tin nhắn');
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    _appendMessage(text: message, isUser: true);
+    context.read<AiAssistantBloc>().add(ParseAiMessage(message: message));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         title: Text(
           'Trợ lý AI',
@@ -263,6 +345,31 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
             }
           },
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Xóa hội thoại',
+            onPressed: () {
+              _messageController.clear();
+              setState(() {
+                _chatMessages
+                  ..clear()
+                  ..add(
+                    _ChatBubbleData(
+                      text:
+                          'Hội thoại đã được làm mới. Bạn hãy gửi tin nhắn giao dịch mới nhé.',
+                      isUser: false,
+                      icon: Icons.refresh_rounded,
+                      createdAt: DateTime.now(),
+                    ),
+                  );
+              });
+              context
+                  .read<AiAssistantBloc>()
+                  .add(const ClearParsedTransactions());
+            },
+            icon: Icon(Icons.delete_sweep_rounded, color: colorScheme.primary),
+          ),
+        ],
       ),
       body: BlocConsumer<AiAssistantBloc, AiAssistantState>(
         listenWhen: (previous, current) {
@@ -276,6 +383,12 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
         listener: (context, state) {
           if (state.errorMessage != null) {
             AppSnackBar.showError(context, state.errorMessage!);
+            _appendMessage(
+              text: state.errorMessage!,
+              isUser: false,
+              icon: Icons.error_outline_rounded,
+              accent: colorScheme.error,
+            );
           }
 
           final becameEmptyAfterAction = state.parsedTransactions.isEmpty;
@@ -285,6 +398,12 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
 
             final success = state.successMessage!.toLowerCase();
             final parsedSuccess = success.contains('đã phân tích');
+            _appendMessage(
+              text: state.successMessage!,
+              isUser: false,
+              icon: Icons.auto_awesome_rounded,
+              accent: colorScheme.primary,
+            );
             if (parsedSuccess) {
               _messageController.clear();
               _scrollToBottom();
@@ -297,48 +416,27 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
         },
         builder: (context, state) {
           return SafeArea(
-            child: CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: _buildInputSection(state, colorScheme),
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                    children: [
+                      ..._chatMessages.map(
+                        (message) => _buildChatBubble(
+                          message,
+                          colorScheme,
+                        ),
+                      ),
+                      if (state.isLoading) _buildTypingBubble(colorScheme),
+                      _buildGuideCard(state, colorScheme),
+                      if (state.parsedTransactions.isNotEmpty)
+                        _buildParsedResultPanel(state, colorScheme),
+                    ],
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverToBoxAdapter(
-                    child: _buildGuideCard(state, colorScheme),
-                  ),
-                ),
-                if (state.parsedTransactions.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                      child: _buildResultHeader(state, colorScheme),
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final item = state.parsedTransactions[index];
-                        return _buildParsedItem(
-                            index, item, state, colorScheme);
-                      },
-                      childCount: state.parsedTransactions.length,
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                      child: _buildDebugJson(state, colorScheme),
-                    ),
-                  ),
-                ],
-                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+                _buildInputSection(state, colorScheme),
               ],
             ),
           );
@@ -351,84 +449,70 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border(
+          top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.6)),
+        ),
       ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child:
-                    Icon(Icons.psychology_outlined, color: colorScheme.primary),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Phân tích tự động',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: colorScheme.onSurface,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            _buildInputTools(colorScheme),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    maxLines: 5,
+                    minLines: 1,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(state),
+                    decoration: InputDecoration(
+                      hintText: 'Nhập tin nhắn thu chi...',
+                      hintStyle: TextStyle(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.75),
+                      ),
+                      filled: true,
+                      fillColor:
+                          colorScheme.surfaceContainerHighest.withOpacity(0.55),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
                       ),
                     ),
-                    Text(
-                      'Nhập dữ liệu thu chi tự do',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _messageController,
-            maxLines: 4,
-            minLines: 2,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(
-              hintText:
-                  'Ví dụ: Hôm qua ăn trưa 50, 21/01/2026 nhận lương 20tr...',
-              hintStyle: TextStyle(
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
-              filled: true,
-              fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
-              ),
-              contentPadding: const EdgeInsets.all(16),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: colorScheme.primary,
+                  child: IconButton(
+                    onPressed:
+                        state.isLoading ? null : () => _sendMessage(state),
+                    icon: state.isLoading
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.onPrimary,
+                            ),
+                          )
+                        : Icon(Icons.send_rounded,
+                            color: colorScheme.onPrimary),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildTopActions(state, colorScheme),
-          const SizedBox(height: 10),
-          _buildInputTools(colorScheme),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -439,14 +523,13 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: _isProcessingOcr ? null : _toggleVoiceInput,
-            icon: Icon(
-              _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-              color: _isListening ? Colors.red.shade500 : colorScheme.primary,
-            ),
-            label: Text(_isListening ? 'Đang nghe...' : 'Voice to Text'),
+            icon: _isListening
+                ? _buildVoiceWave(colorScheme)
+                : Icon(Icons.mic_none_rounded, color: colorScheme.primary),
+            label: Text(_isListening ? 'Đang nghe...' : 'Voice'),
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(44),
-              side: BorderSide(color: colorScheme.primary.withOpacity(0.35)),
+              minimumSize: const Size.fromHeight(42),
+              side: BorderSide(color: colorScheme.primary.withOpacity(0.3)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -466,8 +549,8 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                 : Icon(Icons.receipt_long_rounded, color: colorScheme.primary),
             label: Text(_isProcessingOcr ? 'Đang OCR...' : 'OCR hóa đơn'),
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(44),
-              side: BorderSide(color: colorScheme.primary.withOpacity(0.35)),
+              minimumSize: const Size.fromHeight(42),
+              side: BorderSide(color: colorScheme.primary.withOpacity(0.3)),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -478,91 +561,203 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
     );
   }
 
-  Widget _buildTopActions(AiAssistantState state, ColorScheme colorScheme) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 280;
+  Widget _buildVoiceWave(ColorScheme colorScheme) {
+    final controller = _ensureVoiceWaveController();
 
-        if (isNarrow) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildAnalyzeBtn(state),
-              const SizedBox(height: 8),
-              _buildClearBtn(),
-            ],
+    return SizedBox(
+      width: 24,
+      height: 18,
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(4, (index) {
+              final phase = controller.value * (2 * math.pi);
+              final amp = (math.sin(phase + (index * 0.8)) + 1) / 2;
+              final barHeight = 5.0 + (amp * 10.0);
+
+              return Container(
+                width: 3,
+                height: barHeight,
+                decoration: BoxDecoration(
+                  color: Colors.red.shade500,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              );
+            }),
           );
-        }
+        },
+      ),
+    );
+  }
 
-        return Row(
+  Widget _buildChatBubble(_ChatBubbleData message, ColorScheme colorScheme) {
+    final align = message.isUser ? Alignment.centerRight : Alignment.centerLeft;
+    final bubbleColor = message.isUser
+        ? colorScheme.primary
+        : colorScheme.surfaceContainerHighest.withOpacity(0.7);
+    final textColor =
+        message.isUser ? colorScheme.onPrimary : colorScheme.onSurface;
+
+    return Align(
+      alignment: align,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.icon != null && !message.isUser) ...[
+                Row(
+                  children: [
+                    Icon(
+                      message.icon,
+                      size: 16,
+                      color: message.accent ?? colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'AI Assistant',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+              ],
+              Text(
+                message.text,
+                style: TextStyle(
+                  color: textColor,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                DateFormat('HH:mm').format(message.createdAt),
+                style: TextStyle(
+                  color: textColor.withOpacity(0.75),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypingBubble(ColorScheme colorScheme) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(flex: 2, child: _buildAnalyzeBtn(state)),
-            const SizedBox(width: 12),
-            Expanded(flex: 1, child: _buildClearBtn()),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildAnalyzeBtn(AiAssistantState state) {
-    return AppButton.primary(
-      text: state.isLoading ? 'Đang phân tích...' : 'Phân tích ngay',
-      icon: Icons.auto_awesome_rounded,
-      onPressed: state.isLoading
-          ? null
-          : () {
-              FocusScope.of(context).unfocus();
-              context.read<AiAssistantBloc>().add(
-                    ParseAiMessage(message: _messageController.text),
-                  );
-            },
-      isLoading: state.isLoading,
-    );
-  }
-
-  Widget _buildClearBtn() {
-    return AppButton.secondary(
-      text: 'Xóa',
-      icon: Icons.cleaning_services_rounded,
-      onPressed: () {
-        _messageController.clear();
-        context.read<AiAssistantBloc>().add(const ClearParsedTransactions());
-      },
-    );
-  }
-
-  Widget _buildResultHeader(AiAssistantState state, ColorScheme colorScheme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.list_alt_rounded, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(
-              'Kết quả (${state.parsedTransactions.length})',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
                 color: colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'AI đang phân tích...',
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        AppButton.primary(
-          text: 'Lưu tất cả',
-          icon: Icons.save_alt_rounded,
-          onPressed: state.isSaving
-              ? null
-              : () {
-                  context
-                      .read<AiAssistantBloc>()
-                      .add(const SaveParsedTransactions());
-                },
-          isLoading: state.isSaving && state.savingIndex == null,
-        ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildParsedResultPanel(
+    AiAssistantState state,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      margin: const EdgeInsets.only(top: 2, bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.list_alt_rounded, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Kết quả (${state.parsedTransactions.length})',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: state.isSaving
+                    ? null
+                    : () {
+                        context
+                            .read<AiAssistantBloc>()
+                            .add(const SaveParsedTransactions());
+                      },
+                icon: state.isSaving && state.savingIndex == null
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_alt_rounded),
+                label: const Text('Lưu tất cả'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...List.generate(
+            state.parsedTransactions.length,
+            (index) {
+              final item = state.parsedTransactions[index];
+              return _buildParsedItem(index, item, state, colorScheme);
+            },
+          ),
+          // _buildDebugJson(state, colorScheme),
+        ],
+      ),
     );
   }
 
@@ -777,11 +972,15 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                                         size: 14,
                                         color: colorScheme.onSurfaceVariant),
                                     const SizedBox(width: 4),
-                                    Text(
-                                      item.datetime,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: colorScheme.onSurfaceVariant,
+                                    Expanded(
+                                      child: Text(
+                                        _formatDisplayDateTime(item.datetime),
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -941,7 +1140,7 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                         ),
                         const SizedBox(height: 24),
                         DropdownButtonFormField<String>(
-                          value: selectedType,
+                          initialValue: selectedType,
                           decoration: _buildInputDecoration(
                               'Loại', Icons.swap_vert_rounded),
                           items: const [
@@ -965,7 +1164,8 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<String>(
-                          value: categories.isEmpty ? null : selectedCategoryId,
+                          initialValue:
+                              categories.isEmpty ? null : selectedCategoryId,
                           decoration: _buildInputDecoration(
                               'Danh mục', Icons.category_rounded),
                           isExpanded: true,
@@ -1119,10 +1319,39 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
     return '${formatter.format(amount)} đ';
   }
 
+  String _formatDisplayDateTime(String raw) {
+    if (raw.trim().toLowerCase() == 'now') {
+      return 'Bây giờ';
+    }
+
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) {
+      return raw;
+    }
+
+    return DateFormat('dd/MM/yyyy HH:mm').format(parsed);
+  }
+
   int? _normalizeAmountInput(String text) {
     final value = int.tryParse(text.replaceAll(RegExp(r'[^\d]'), ''));
     if (value == null) return null;
     if (value > 0 && value < 1000) return value * 1000;
     return value;
   }
+}
+
+class _ChatBubbleData {
+  final String text;
+  final bool isUser;
+  final IconData? icon;
+  final Color? accent;
+  final DateTime createdAt;
+
+  const _ChatBubbleData({
+    required this.text,
+    required this.isUser,
+    required this.createdAt,
+    this.icon,
+    this.accent,
+  });
 }

@@ -32,7 +32,9 @@ class FinancialMessageParserService {
   List<String> _splitIntoChunks(String message) {
     final segments = message
         .split(
-          RegExp(r'\n|;|,\s+|\s+rồi\s+|\s+sau đó\s+|\s+tiếp theo\s+'),
+          RegExp(
+            r'\n|;|,\s+|,(?=\s*(?:\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|[a-zA-ZÀ-ỹ]))|\s+rồi\s+|\s+sau đó\s+|\s+tiếp theo\s+',
+          ),
         )
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty)
@@ -337,6 +339,10 @@ class FinancialMessageParserService {
       r'(\d{4})-(\d{1,2})-(\d{1,2})(?:[ t](\d{1,2})[:h](\d{1,2}))?',
     );
     final slashDateRegex = RegExp(r'(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?');
+    final monthWordDateRegex = RegExp(
+      r'(?:ngay|ngày)?\s*(\d{1,2})\s*(?:thang|tháng)\s*(\d{1,2})(?:\s*(?:nam|năm)\s*(\d{2,4}))?',
+      caseSensitive: false,
+    );
     final timeRegex = RegExp(r'(\d{1,2})[:h](\d{1,2})');
 
     final isoMatch = fullDateTimeRegex.firstMatch(text);
@@ -354,11 +360,16 @@ class FinancialMessageParserService {
       final day = int.parse(slashMatch.group(1)!);
       final month = int.parse(slashMatch.group(2)!);
       final yearText = slashMatch.group(3);
-      final year = yearText == null
-          ? now.year
-          : (yearText.length == 2
-              ? 2000 + int.parse(yearText)
-              : int.parse(yearText));
+      final year = _resolveYear(yearText, now.year);
+      date = DateTime(year, month, day);
+    }
+
+    final monthWordMatch = monthWordDateRegex.firstMatch(normalized);
+    if (monthWordMatch != null) {
+      final day = int.parse(monthWordMatch.group(1)!);
+      final month = int.parse(monthWordMatch.group(2)!);
+      final yearText = monthWordMatch.group(3);
+      final year = _resolveYear(yearText, now.year);
       date = DateTime(year, month, day);
     }
 
@@ -383,6 +394,24 @@ class FinancialMessageParserService {
 
     cleaned = cleaned.replaceAll(
       RegExp(
+        r'\b(?:ngày|ngay)?\s*\d{1,2}\s*(?:tháng|thang)\s*\d{1,2}(?:\s*(?:năm|nam)\s*\d{2,4})?\b',
+        caseSensitive: false,
+      ),
+      '',
+    );
+
+    cleaned = cleaned.replaceAll(
+      RegExp(r'\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b'),
+      '',
+    );
+
+    cleaned = cleaned.replaceAll(
+      RegExp(r'\b\d{4}-\d{1,2}-\d{1,2}(?:[ t]\d{1,2}:\d{1,2})?\b'),
+      '',
+    );
+
+    cleaned = cleaned.replaceAll(
+      RegExp(
         r'(-?\d[\d\.,\s]*)(?:\s*(k|nghìn|nghin|ngàn|ngan|tr|triệu|trieu|m|đ|vnd|dong))?',
         caseSensitive: false,
       ),
@@ -391,7 +420,7 @@ class FinancialMessageParserService {
 
     cleaned = cleaned.replaceAll(
       RegExp(
-        r'\b(hom nay|hôm nay|hom qua|hôm qua|hom kia|hôm kia|ngay mai|ngày mai|luc|lúc|vao|vào)\b',
+        r'\b(hom nay|hôm nay|hom qua|hôm qua|hom kia|hôm kia|ngay mai|ngày mai|luc|lúc|vao|vào|thang|tháng|ngay|ngày|nam|năm)\b',
         caseSensitive: false,
       ),
       '',
@@ -418,10 +447,27 @@ class FinancialMessageParserService {
         .trim();
   }
 
+  int _resolveYear(String? yearText, int defaultYear) {
+    if (yearText == null || yearText.trim().isEmpty) {
+      return defaultYear;
+    }
+
+    final parsed = int.tryParse(yearText.trim());
+    if (parsed == null) {
+      return defaultYear;
+    }
+
+    if (yearText.trim().length == 2) {
+      return 2000 + parsed;
+    }
+
+    return parsed;
+  }
+
   String _removeVietnameseDiacritics(String str) {
-    final withDia = 'áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệ'
+    const withDia = 'áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệ'
         'íìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ';
-    final withoutDia = 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiii'
+    const withoutDia = 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiii'
         'ooooooooooooooooouuuuuuuuuuuyyyyyd';
 
     var output = str;

@@ -63,10 +63,10 @@ class _DashboardPageState extends State<DashboardPage> {
         actions: [
           //Add transaction
           IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            tooltip: 'Thêm giao dịch',
+            icon: const Icon(Icons.rocket_launch_outlined),
+            tooltip: 'Trợ lý AI',
             onPressed: () async {
-              await context.push('/transactions/add');
+              await context.push('/ai-assistant');
               if (mounted) {
                 context.read<DashboardBloc>().add(const RefreshDashboard());
               }
@@ -121,7 +121,7 @@ class _DashboardPageState extends State<DashboardPage> {
           }
 
           // Initial state
-          return  Center(
+          return Center(
             child: AppText.body('Kéo xuống để tải dữ liệu'),
           );
         },
