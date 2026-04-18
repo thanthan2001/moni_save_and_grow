@@ -761,48 +761,48 @@ class _AiAssistantPageState extends State<AiAssistantPage>
     );
   }
 
-  Widget _buildDebugJson(AiAssistantState state, ColorScheme colorScheme) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        title: Text(
-          'Dữ liệu JSON gốc (Debug)',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        collapsedBackgroundColor: colorScheme.surface,
-        backgroundColor: colorScheme.surface,
-        iconColor: colorScheme.primary,
-        collapsedIconColor: colorScheme.onSurfaceVariant,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        collapsedShape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E1E),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: SelectableText(
-              state.rawJson,
-              style: const TextStyle(
-                color: Color(0xFFA6E22E),
-                fontFamily: 'monospace',
-                fontSize: 12,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildDebugJson(AiAssistantState state, ColorScheme colorScheme) {
+  //   return Theme(
+  //     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+  //     child: ExpansionTile(
+  //       title: Text(
+  //         'Dữ liệu JSON gốc (Debug)',
+  //         style: TextStyle(
+  //           fontSize: 14,
+  //           fontWeight: FontWeight.w600,
+  //           color: colorScheme.onSurfaceVariant,
+  //         ),
+  //       ),
+  //       collapsedBackgroundColor: colorScheme.surface,
+  //       backgroundColor: colorScheme.surface,
+  //       iconColor: colorScheme.primary,
+  //       collapsedIconColor: colorScheme.onSurfaceVariant,
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //       collapsedShape:
+  //           RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //       children: [
+  //         Container(
+  //           width: double.infinity,
+  //           padding: const EdgeInsets.all(16),
+  //           margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+  //           decoration: BoxDecoration(
+  //             color: const Color(0xFF1E1E1E),
+  //             borderRadius: BorderRadius.circular(12),
+  //           ),
+  //           child: SelectableText(
+  //             state.rawJson,
+  //             style: const TextStyle(
+  //               color: Color(0xFFA6E22E),
+  //               fontFamily: 'monospace',
+  //               fontSize: 12,
+  //               height: 1.5,
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildGuideCard(AiAssistantState state, ColorScheme colorScheme) {
     return Container(

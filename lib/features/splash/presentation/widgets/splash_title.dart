@@ -19,6 +19,7 @@ class SplashTitle extends StatelessWidget {
             color: const Color(0xFF9598B0),
             shadows: [
               Shadow(
+                // ignore: deprecated_member_use
                 color: Colors.black.withOpacity(0.1),
                 offset: const Offset(0, 2),
                 blurRadius: 4,
