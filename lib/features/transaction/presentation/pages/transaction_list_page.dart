@@ -53,49 +53,49 @@ class _TransactionListPageState extends State<TransactionListPage> {
           ),
         ),
         body: BlocConsumer<TransactionBloc, TransactionState>(
-        listener: (context, state) {
-          // Hiển thị thông báo khi có action success/error
-          if (state is TransactionActionSuccess) {
-            AppSnackBar.showSuccess(context, state.message);
-          } else if (state is TransactionError) {
-            AppSnackBar.showError(context, state.message);
-          }
-        },
-        builder: (context, state) {
-          if (state is TransactionLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          listener: (context, state) {
+            // Hiển thị thông báo khi có action success/error
+            if (state is TransactionActionSuccess) {
+              AppSnackBar.showSuccess(context, state.message);
+            } else if (state is TransactionError) {
+              AppSnackBar.showError(context, state.message);
+            }
+          },
+          builder: (context, state) {
+            if (state is TransactionLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (state is TransactionError && state is! TransactionLoaded) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline,
-                      size: 64, color: AppColors.red),
-                  const SizedBox(height: 16),
-                  AppText.body(state.message),
-                  const SizedBox(height: 16),
-                  AppButton.primary(
-                    text: 'Thử lại',
-                    icon: Icons.refresh,
-                    onPressed: () {
-                      context
-                          .read<TransactionBloc>()
-                          .add(const LoadTransactions());
-                    },
-                  ),
-                ],
-              ),
-            );
-          }
+            if (state is TransactionError && state is! TransactionLoaded) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline,
+                        size: 64, color: AppColors.red),
+                    const SizedBox(height: 16),
+                    AppText.body(state.message),
+                    const SizedBox(height: 16),
+                    AppButton.primary(
+                      text: 'Thử lại',
+                      icon: Icons.refresh,
+                      onPressed: () {
+                        context
+                            .read<TransactionBloc>()
+                            .add(const LoadTransactions());
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }
 
-          if (state is TransactionLoaded) {
-            return _buildTransactionList(context, state);
-          }
+            if (state is TransactionLoaded) {
+              return _buildTransactionList(context, state);
+            }
 
-          return  Center(child: AppText.body('Kéo xuống để tải dữ liệu'));
-        },
+            return Center(child: AppText.body('Kéo xuống để tải dữ liệu'));
+          },
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () async {
@@ -120,7 +120,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
 
     // Filter theo ngày
     var filteredTransactions = _filterByDate(transactions);
-    
+
     // Filter theo loại (Thu/Chi)
     if (_typeFilter != null) {
       filteredTransactions = filteredTransactions.where((transaction) {
@@ -132,7 +132,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
         return true;
       }).toList();
     }
-    
+
     // Filter theo search query
     if (_searchQuery.isNotEmpty) {
       filteredTransactions = filteredTransactions.where((transaction) {
@@ -241,7 +241,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
     required String type,
   }) {
     final isSelected = _typeFilter == type;
-    
+
     return InkWell(
       onTap: () {
         setState(() {
@@ -265,7 +265,7 @@ class _TransactionListPageState extends State<TransactionListPage> {
             Icon(
               icon,
               size: 18,
-              color:  color,
+              color: color,
             ),
             const SizedBox(width: 4),
             AppText.bodySmall(
@@ -295,16 +295,21 @@ class _TransactionListPageState extends State<TransactionListPage> {
             Icon(
               Icons.calendar_today,
               size: 18,
-              color: _selectedDate != null ? Theme.of(context).primaryColor : Colors.grey[600],
+              color: _selectedDate != null
+                  ? Theme.of(context).primaryColor
+                  : Colors.grey[600],
             ),
             const SizedBox(width: 6),
             Flexible(
               child: AppText.bodySmall(
-                _selectedDate != null 
-                  ? DateFormat('dd/MM/yy').format(_selectedDate!)
-                  : 'Lịch',
-                color: _selectedDate != null ? Theme.of(context).primaryColor : Colors.grey[600],
-                fontWeight: _selectedDate != null ? FontWeight.bold : FontWeight.normal,
+                _selectedDate != null
+                    ? DateFormat('dd/MM/yy').format(_selectedDate!)
+                    : 'Lịch',
+                color: _selectedDate != null
+                    ? Theme.of(context).primaryColor
+                    : Colors.grey[600],
+                fontWeight:
+                    _selectedDate != null ? FontWeight.bold : FontWeight.normal,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -330,69 +335,69 @@ class _TransactionListPageState extends State<TransactionListPage> {
   }
 
   /// Build calendar filter
-  Widget _buildCalendarFilter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: InkWell(
-        onTap: _showDatePicker,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey[300]!),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.calendar_today, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AppText.body(
-                  _selectedDate != null 
-                    ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
-                    : 'Xem tất cả giao dịch',
-                ),
-              ),
-              if (_selectedDate != null)
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedDate = null;
-                    });
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.all(4.0),
-                    child: Icon(Icons.clear, size: 20),
-                  ),
-                )
-              else
-                const Icon(Icons.arrow_drop_down),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildCalendarFilter() {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(horizontal: 16),
+  //     child: InkWell(
+  //       onTap: _showDatePicker,
+  //       borderRadius: BorderRadius.circular(12),
+  //       child: Container(
+  //         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //         decoration: BoxDecoration(
+  //           border: Border.all(color: Colors.grey[300]!),
+  //           borderRadius: BorderRadius.circular(12),
+  //         ),
+  //         child: Row(
+  //           children: [
+  //             const Icon(Icons.calendar_today, size: 20),
+  //             const SizedBox(width: 12),
+  //             Expanded(
+  //               child: AppText.body(
+  //                 _selectedDate != null
+  //                   ? DateFormat('dd/MM/yyyy').format(_selectedDate!)
+  //                   : 'Xem tất cả giao dịch',
+  //               ),
+  //             ),
+  //             if (_selectedDate != null)
+  //               GestureDetector(
+  //                 onTap: () {
+  //                   setState(() {
+  //                     _selectedDate = null;
+  //                   });
+  //                 },
+  //                 child: const Padding(
+  //                   padding: EdgeInsets.all(4.0),
+  //                   child: Icon(Icons.clear, size: 20),
+  //                 ),
+  //               )
+  //             else
+  //               const Icon(Icons.arrow_drop_down),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   /// Show date picker
   Future<void> _showDatePicker() async {
     final picked = await showDatePicker(
-        context: context,
+      context: context,
       initialDate: _selectedDate ?? DateTime.now(),
-        firstDate: DateTime(2020),
-        lastDate: DateTime.now().add(const Duration(days: 365)),
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(
-                primary: Theme.of(context).primaryColor,
-                onPrimary: Colors.white,
-              ),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
+              onPrimary: Colors.white,
             ),
-            child: child!,
-          );
-        },
-      );
+          ),
+          child: child!,
+        );
+      },
+    );
 
     if (picked != null) {
       setState(() {
@@ -407,11 +412,14 @@ class _TransactionListPageState extends State<TransactionListPage> {
       return transactions;
     }
 
-    final startDate = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day);
-    final endDate = DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day, 23, 59, 59);
+    final startDate =
+        DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day);
+    final endDate = DateTime(_selectedDate!.year, _selectedDate!.month,
+        _selectedDate!.day, 23, 59, 59);
 
     return transactions.where((transaction) {
-      return transaction.date.isAfter(startDate.subtract(const Duration(seconds: 1))) &&
+      return transaction.date
+              .isAfter(startDate.subtract(const Duration(seconds: 1))) &&
           transaction.date.isBefore(endDate.add(const Duration(seconds: 1)));
     }).toList();
   }

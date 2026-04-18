@@ -87,7 +87,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
               );
             }
 
-            return  Center(child: AppText.body('Kéo xuống để tải dữ liệu'));
+            return Center(child: AppText.body('Kéo xuống để tải dữ liệu'));
           },
         ),
       ),
@@ -327,7 +327,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                 AppText.heading4(
+                AppText.heading4(
                   'Số dư',
                   color: AppColors.white,
                 ),
@@ -374,11 +374,11 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   }
 
   Widget _buildCombinedChart(StatisticsSummary summary) {
-    final formatter = NumberFormat.currency(
-      locale: 'vi_VN',
-      symbol: 'đ',
-      decimalDigits: 0,
-    );
+    // final formatter = NumberFormat.currency(
+    //   locale: 'vi_VN',
+    //   symbol: 'đ',
+    //   decimalDigits: 0,
+    // );
 
     return SizedBox(
       height: 240,
