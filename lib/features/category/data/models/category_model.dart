@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:flutter/material.dart';
+import '../../../../core/utils/icon_data_resolver.dart';
 import '../../domain/entities/category_entity.dart';
 
 part 'category_model.g.dart';
@@ -73,8 +74,8 @@ class CategoryModel extends HiveObject {
 
   /// Helper method để tạo IconData
   IconData _createIconData() {
-    return IconData(
-      iconCodePoint,
+    return AppIconResolver.resolve(
+      codePoint: iconCodePoint,
       fontFamily: iconFontFamily,
       fontPackage: iconFontPackage,
     );

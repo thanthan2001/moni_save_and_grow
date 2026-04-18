@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/routing/app_back_scope.dart';
+import '../../../../core/utils/icon_data_resolver.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/configs/app_colors.dart';
 import '../../../../global/widgets/widgets.dart';
@@ -619,8 +620,8 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 
   /// Helper method để tạo IconData từ category statistics
   IconData _createIconData(CategoryStatistics cat) {
-    return IconData(
-      cat.categoryIconCodePoint,
+    return AppIconResolver.resolve(
+      codePoint: cat.categoryIconCodePoint,
       fontFamily: cat.categoryIconFontFamily,
       fontPackage: cat.categoryIconFontPackage,
     );
